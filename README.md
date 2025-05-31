@@ -71,7 +71,8 @@ Content-Type: application/json
 **Request Body:**
 ```json
 {
-  "url": "https://www.youtube.com/watch?v=VIDEO_ID"
+  "url": "https://www.youtube.com/watch?v=VIDEO_ID",
+  "languages": ["de", "en"]
 }
 ```
 
@@ -79,7 +80,9 @@ Content-Type: application/json
 ```json
 {
   "transcript": "Das komplette Video-Transcript...",
-  "video_url": "https://www.youtube.com/watch?v=VIDEO_ID"
+  "video_url": "https://www.youtube.com/watch?v=VIDEO_ID",
+  "language": "de",
+  "video_id": "VIDEO_ID"
 }
 ```
 
@@ -105,7 +108,7 @@ python test_api.py
 curl -X POST "http://localhost:8082/YTtranscript" \
   -H "X-API-Key: dein-geheimer-api-key" \
   -H "Content-Type: application/json" \
-  -d '{"url": "https://www.youtube.com/watch?v=8gHt3fwub7U"}'
+  -d '{"url": "https://www.youtube.com/watch?v=8gHt3fwub7U", "languages": ["de", "en"]}'
 ```
 
 ### Python
@@ -118,7 +121,8 @@ headers = {
     "Content-Type": "application/json"
 }
 data = {
-    "url": "https://www.youtube.com/watch?v=8gHt3fwub7U"
+    "url": "https://www.youtube.com/watch?v=8gHt3fwub7U",
+    "languages": ["de", "en"]
 }
 
 response = requests.post(url, headers=headers, json=data)
@@ -134,7 +138,8 @@ const response = await fetch('http://localhost:8082/YTtranscript', {
     'Content-Type': 'application/json',
   },
   body: JSON.stringify({
-    url: 'https://www.youtube.com/watch?v=8gHt3fwub7U'
+    url: 'https://www.youtube.com/watch?v=8gHt3fwub7U',
+    languages: ['de', 'en']
   })
 });
 

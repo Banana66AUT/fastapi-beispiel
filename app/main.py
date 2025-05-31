@@ -43,12 +43,14 @@ async def get_youtube_transcript(
     api_key: str = Depends(get_api_key)
 ):
     try:
-        transcript_loader = LoadTranscript(str(request.url))
+        transcript_loader = LoadTranscript(str(request.url), request.languages)
         result = transcript_loader.run()
         
         return TranscriptResponse(
             transcript=result["transcript"],
-            video_url=str(request.url)
+            video_url=str(request.url),
+            language=result["language"],
+            video_id=result["video_id"]
         )
     except IndexError:
         raise HTTPException(
