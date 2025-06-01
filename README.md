@@ -9,7 +9,10 @@ Eine FastAPI-basierte API zum Abrufen von YouTube-Video-Transkripten mit API-Key
 - 🌐 CORS-Unterstützung
 - 📚 Automatische API-Dokumentation
 - ✅ Umfassende Fehlerbehandlung
-- 🧪 Integrierte Tests
+- 🧪 Integrierte Tests (synchron & asynchron)
+- 🚀 Asynchrone Test-Suite mit Multithreading
+- ⚡ Performance-Benchmarking
+- 📊 Detaillierte Ausführungsmetriken
 
 ## Installation
 
@@ -93,6 +96,7 @@ Content-Type: application/json
 
 ## Tests ausführen
 
+### Synchrone Tests (Standard)
 ```bash
 # Stelle sicher, dass der Server läuft
 python start_server.py
@@ -100,6 +104,22 @@ python start_server.py
 # In einem neuen Terminal:
 python test_api.py
 ```
+
+### Asynchrone Tests mit Multithreading
+```bash
+# Stelle sicher, dass der Server läuft
+python start_server.py
+
+# In einem neuen Terminal - Asynchrone Tests:
+python test_api_async.py
+```
+
+Die asynchrone Version bietet folgende Vorteile:
+- **🚀 Parallele Ausführung**: Alle Tests laufen gleichzeitig
+- **⚡ Performance-Vergleich**: Zeigt Speedup gegenüber sequenzieller Ausführung
+- **📊 Detaillierte Metriken**: Ausführungszeiten für jeden Test
+- **🔄 Concurrent Request Tests**: Testet mehrere gleichzeitige API-Aufrufe
+- **💡 Session-Management**: Wiederverwendung von HTTP-Verbindungen
 
 ## Beispiel-Verwendung
 
@@ -147,6 +167,150 @@ const data = await response.json();
 console.log(data);
 ```
 
+### Python Asynchron (aiohttp)
+```python
+import asyncio
+import aiohttp
+
+async def test_api():
+    async with aiohttp.ClientSession() as session:
+        headers = {
+            "X-API-Key": "dein-geheimer-api-key",
+            "Content-Type": "application/json"
+        }
+        data = {
+            "url": "https://www.youtube.com/watch?v=8gHt3fwub7U",
+            "languages": ["de", "en"]
+        }
+        
+        async with session.post(
+            "http://localhost:8082/YTtranscript",
+            headers=headers,
+            json=data
+        ) as response:
+            result = await response.json()
+            print(result)
+
+# Ausführung
+asyncio.run(test_api())
+```
+
+### Mehrere gleichzeitige Requests
+```python
+import asyncio
+import aiohttp
+
+async def concurrent_requests():
+    async with aiohttp.ClientSession() as session:
+        headers = {
+            "X-API-Key": "dein-geheimer-api-key",
+            "Content-Type": "application/json"
+        }
+        
+        # Mehrere URLs gleichzeitig verarbeiten
+        urls = [
+            "https://www.youtube.com/watch?v=8gHt3fwub7U",
+            "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+            "https://www.youtube.com/watch?v=example123"
+        ]
+        
+        tasks = []
+        for url in urls:
+            data = {"url": url, "languages": ["de", "en"]}
+            task = session.post(
+                "http://localhost:8082/YTtranscript",
+                headers=headers,
+                json=data
+            )
+            tasks.append(task)
+        
+        # Alle Requests parallel ausführen
+        responses = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        for i, response in enumerate(responses):
+            if isinstance(response, Exception):
+                print(f"URL {i+1} failed: {response}")
+            else:
+                result = await response.json()
+                print(f"URL {i+1} result: {result['video_url']}")
+
+# Ausführung
+asyncio.run(concurrent_requests())
+```
+
+## Performance & Asynchrone Features
+
+### Asynchrone Test-Suite
+
+Die `test_api_async.py` bietet erweiterte Test-Funktionalitäten:
+
+#### Features:
+- **Session-Management**: Wiederverwendung von HTTP-Verbindungen
+- **Parallele Ausführung**: Alle Tests laufen gleichzeitig mit `asyncio.gather()`
+- **Performance-Vergleich**: Direkte Gegenüberstellung parallel vs. sequenziell
+- **Concurrent Request Tests**: Testet Verhalten bei gleichzeitigen API-Aufrufen
+- **Detaillierte Metriken**: Ausführungszeiten für jeden einzelnen Test
+
+#### Technische Details:
+```python
+# Async Context Manager für Session-Management
+async with AsyncAPITester(BASE_URL, API_KEY) as tester:
+    # Parallele Ausführung mit asyncio.gather()
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+```
+
+#### Connection Pool Konfiguration:
+```python
+self.session = aiohttp.ClientSession(
+    timeout=aiohttp.ClientTimeout(total=30),
+    connector=aiohttp.TCPConnector(limit=10)  # Max 10 gleichzeitige Verbindungen
+)
+```
+
+### Performance-Metriken
+
+Die asynchrone Version misst:
+- **Execution Time**: Einzelne Test-Ausführungszeiten
+- **Total Time**: Gesamtzeit für alle Tests
+- **Speedup Factor**: Verbesserung durch parallele Ausführung
+- **Requests per Second**: Bei Concurrent Request Tests
+- **Success Rate**: Erfolgsrate bei gleichzeitigen Requests
+
+### Beispiel-Output:
+```
+🚀 Starte parallele API-Tests...
+🧪 Teste Root-Endpunkt...
+✅ Status: 200
+⏱️ Ausführungszeit: 0.15s
+
+📊 Test-Zusammenfassung:
+✅ Erfolgreich: 5/5
+⏱️ Gesamtzeit: 2.34s
+🚀 Parallel-Speedup: Tests liefen gleichzeitig!
+
+🏆 Performance-Vergleich:
+⚡ Parallel: 2.34s
+🐌 Sequenziell: 8.92s
+🚀 Speedup: 3.81x schneller
+```
+
+### Multithreading vs. Asyncio
+
+Diese Implementierung nutzt **Asyncio** statt traditionellem Multithreading:
+
+**Vorteile von Asyncio:**
+- Kein Thread-Overhead
+- Bessere Resource-Effizienz
+- Einfachere Fehlerbehandlung
+- Keine Race Conditions
+- Skaliert besser bei I/O-intensiven Operationen
+
+**Warum für API-Tests ideal:**
+- HTTP-Requests sind I/O-gebunden
+- Wartezeiten auf Server-Antworten können parallel überbrückt werden
+- Session-Pooling reduziert Connection-Overhead
+- Exception-Handling pro Request
+
 ## Konfiguration
 
 ### Umgebungsvariablen
@@ -179,9 +343,10 @@ fastapi-beispiel/
 │   ├── models.py            # Pydantic-Modelle
 │   └── endpoints/
 │       └── YTtranscript.py  # YouTube-Transcript-Logik
-├── requirements.txt         # Python-Dependencies
+├── requirements.txt         # Python-Dependencies (inkl. aiohttp)
 ├── start_server.py          # Server-Startskript
-├── test_api.py             # API-Tests
+├── test_api.py             # Synchrone API-Tests
+├── test_api_async.py       # Asynchrone API-Tests mit Multithreading
 ├── env.example             # Beispiel-Umgebungskonfiguration
 └── README.md               # Diese Datei
 ```

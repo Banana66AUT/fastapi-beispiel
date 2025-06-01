@@ -223,6 +223,91 @@ class AsyncAPITester:
                 "error": str(e)
             }
 
+    async def test_multiple_concurrent_requests(self, num_requests: int = 5) -> Dict[str, Any]:
+        """Teste mehrere gleichzeitige Requests zum gleichen Endpunkt"""
+        print(f"🧪 Teste {num_requests} gleichzeitige Requests...")
+        start_time = time.time()
+        
+        headers = {
+            "X-API-Key": self.api_key,
+            "Content-Type": "application/json"
+        }
+        
+        data = {
+            "url": "https://www.youtube.com/watch?v=8gHt3fwub7U"
+        }
+        
+        # Erstelle Tasks für gleichzeitige Requests
+        tasks = []
+        for i in range(num_requests):
+            task = self._single_request(f"request_{i+1}", headers, data)
+            tasks.append(task)
+        
+        try:
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            execution_time = time.time() - start_time
+            
+            successful_requests = 0
+            for result in results:
+                if isinstance(result, dict) and result.get("success", False):
+                    successful_requests += 1
+            
+            print(f"✅ {successful_requests}/{num_requests} Requests erfolgreich")
+            print(f"⏱️ Gesamtzeit für {num_requests} Requests: {execution_time:.2f}s")
+            print(f"📊 Durchschnitt pro Request: {execution_time/num_requests:.2f}s")
+            print()
+            
+            return {
+                "test": "concurrent_requests",
+                "total_requests": num_requests,
+                "successful_requests": successful_requests,
+                "success": successful_requests == num_requests,
+                "execution_time": execution_time,
+                "average_per_request": execution_time / num_requests,
+                "results": results
+            }
+            
+        except Exception as e:
+            execution_time = time.time() - start_time
+            print(f"❌ Fehler bei gleichzeitigen Requests: {e}")
+            print(f"⏱️ Ausführungszeit: {execution_time:.2f}s")
+            print()
+            
+            return {
+                "test": "concurrent_requests",
+                "total_requests": num_requests,
+                "successful_requests": 0,
+                "success": False,
+                "execution_time": execution_time,
+                "error": str(e)
+            }
+
+    async def _single_request(self, request_id: str, headers: dict, data: dict) -> Dict[str, Any]:
+        """Hilfsfunktion für einzelne Requests"""
+        try:
+            async with self.session.post(
+                f"{self.base_url}/YTtranscript",
+                headers=headers,
+                json=data
+            ) as response:
+                status = response.status
+                result = await response.json()
+                
+                return {
+                    "request_id": request_id,
+                    "status": status,
+                    "success": status == 200,
+                    "response": result
+                }
+                
+        except Exception as e:
+            return {
+                "request_id": request_id,
+                "status": None,
+                "success": False,
+                "error": str(e)
+            }
+
     async def run_all_tests_parallel(self) -> Dict[str, Any]:
         """Führe alle Tests parallel aus"""
         print("🚀 Starte parallele API-Tests...")
@@ -237,7 +322,8 @@ class AsyncAPITester:
             self.test_root_endpoint(),
             self.test_youtube_transcript(),
             self.test_without_api_key(),
-            self.test_invalid_url()
+            self.test_invalid_url(),
+            self.test_multiple_concurrent_requests(3)
         ]
         
         results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -292,7 +378,8 @@ class AsyncAPITester:
             self.test_root_endpoint,
             self.test_youtube_transcript,
             self.test_without_api_key,
-            self.test_invalid_url
+            self.test_invalid_url,
+            lambda: self.test_multiple_concurrent_requests(3)
         ]
         
         results = []
